@@ -13,12 +13,21 @@ A desktop application that converts currencies using real-time exchange rates.
 - Tkinter
 - ExchangeRate-API
 
-## How to Run
-1. Clone the repository
-2. Install dependencies
-3. Run the application
+## Run the API Key Check (Git Bash)
+
+From the repository root, create and activate a virtual environment, install the dependencies, and create `.env` without overwriting an existing file:
 
 ```bash
-pip install -r requirements.txt
-python main.py
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install -r requirements.txt
+cp -n .env.example .env
 ```
+
+Open `.env`, replace `your_api_key_here` with your ExchangeRate-API key, then run:
+
+```bash
+python scripts/check_api_key.py
+```
+
+If the virtual environment already exists, skip the `python -m venv .venv` step. The check loads `.env` from the project root, so it also works when invoked from another working directory.
