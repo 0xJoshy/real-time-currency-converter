@@ -27,7 +27,7 @@ Manual currency conversion is prone to error; it is time consuming and often unr
 * **Timestamp Verification:** Displays the exact date and time of the current rates last fetch so users can verify its accuracy.
 
 ### b. Out-of-Scope
-* **No Multi-Currency Support:** Operating with a fixed based currency and supporting only single-pair conversions at a time.
+* **No Multi-Target Conversion Support:** Operating with a fixed based currency and supporting only single-pair conversions at a time.
 * **No User Accounts:** Operating without user logins or saved profiles.
 * **No Rate Tracking:** Excludes rate history charts, graphs or past rate comparisons overtime.
 
