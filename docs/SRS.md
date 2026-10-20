@@ -1,7 +1,7 @@
 # Software Requirements Specifications
 ## Real-Time Currency Converter Systems
 
-The objective is to build a desktop console application in Python that converts amounts between currencies using live exchange rates, to serve users with quick access and accurate conversions without having to check rates manually.
+The objective is to build a desktop application in Python that converts amounts between currencies using live exchange rates, to serve users with quick access and accurate conversions without having to check rates manually.
 
 ---
 
