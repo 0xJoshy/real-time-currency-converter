@@ -1,3 +1,4 @@
+import threading
 import tkinter as tk
 from tkinter import ttk
 
@@ -50,12 +51,27 @@ class AppWindow:
         except ValueError:
             self.result_var.set("Please enter a number.")
             return
-        try:
-            rate = get_rate(self.from_var.get(), self.to_var.get())
-        except Exception as error:  # FR-07 will replace this with clear messages
-            self.result_var.set(f"Error: {error}")
-            return
+
+        from_code = self.from_var.get()
+        to_code = self.to_var.get()
+        self.result_var.set("Fetching rate...")
+
+        def worker() -> None:
+            try:
+                rate = get_rate(from_code, to_code)
+            except Exception as error:  # FR-07 will replace this with clear messages
+                self.root.after(0, lambda: self.result_var.set(f"Error: {error}"))
+                return
+            self.root.after(
+                0, lambda: self._show_result(amount, rate, from_code, to_code)
+            )
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _show_result(
+        self, amount: float, rate: float, from_code: str, to_code: str
+    ) -> None:
         self.result_var.set(
-            f"{amount:,.2f} {self.from_var.get()} = {amount * rate:,.2f} {self.to_var.get()}"
+            f"{amount:,.2f} {from_code} = {amount * rate:,.2f} {to_code}"
         )
-        self.rate_var.set(f"1 {self.from_var.get()} = {rate:.6f} {self.to_var.get()}")
+        self.rate_var.set(f"1 {from_code} = {rate:.6f} {to_code}")
