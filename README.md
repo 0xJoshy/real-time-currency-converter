@@ -11,7 +11,7 @@ A desktop application that converts currencies using real-time exchange rates.
 ## Technologies Used
 - Python
 - Tkinter
-- Exchange Rate API
+- ExchangeRate-API
 
 ## How to Run
 1. Clone the repository
