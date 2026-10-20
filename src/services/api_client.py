@@ -1,6 +1,6 @@
 import requests
 
-from src.config import get_api_key
+from config import get_api_key
 
 BASE_URL = "https://v6.exchangerate-api.com/v6"
 TIMEOUT_SECONDS = 10
