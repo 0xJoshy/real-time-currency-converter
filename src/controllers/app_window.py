@@ -8,21 +8,21 @@ background thread so the window never freezes.
 import os
 import queue
 import threading
-import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
 
 from dotenv import load_dotenv
 
-from models.currency import ValidationError, validate_conversion
+from models.currency import ValidationError, swap_currencies, validate_conversion
 from services.converter import ConverterService
+from services.cooldown import Cooldown
 from services.rate_client import ExchangeRateClient, RateApiError
 from services.rate_service import RateService, RefreshResult
 from services.strategy import RoundedRateStrategy
 
-AUTO_REFRESH_MS = 60 * 60 * 1000   # hourly = ~720 requests/month, under the free tier
-MANUAL_COOLDOWN_S = 30             # FR-08
+AUTO_REFRESH_MS = 60 * 60 * 1000  # hourly = ~720 requests/month, under the free tier
+MANUAL_COOLDOWN_S = 30  # FR-08
 POLL_MS = 100
 ERROR_COLOR = "#b00020"
 OK_COLOR = "#1b5e20"
@@ -52,7 +52,7 @@ class AppWindow:
         self.converter = ConverterService(RoundedRateStrategy())
         self._results = queue.Queue()
         self._refreshing = False
-        self._next_manual_ok = 0.0
+        self._cooldown = Cooldown(MANUAL_COOLDOWN_S)
 
         self.amount_var = tk.StringVar()
         self.source_var = tk.StringVar()
@@ -77,7 +77,9 @@ class AppWindow:
         ttk.Label(frame, text="Amount").grid(row=0, column=0, sticky="w")
         self.amount_entry = ttk.Entry(frame, textvariable=self.amount_var, width=20)
         self.amount_entry.grid(row=1, column=0, columnspan=3, sticky="we", pady=(0, 8))
-        self.amount_entry.bind("<Return>", lambda _e: self.on_convert())  # Enter converts
+        self.amount_entry.bind(
+            "<Return>", lambda _e: self.on_convert()
+        )  # Enter converts
         self.amount_entry.focus()
 
         ttk.Label(frame, text="From").grid(row=2, column=0, sticky="w")
@@ -87,20 +89,31 @@ class AppWindow:
         self.target_box = ttk.Combobox(frame, textvariable=self.target_var, width=8)
         self.source_box.grid(row=3, column=0, sticky="we")
         ttk.Button(frame, text="Swap", width=6, command=self.on_swap).grid(
-            row=3, column=1, padx=6)
+            row=3, column=1, padx=6
+        )
         self.target_box.grid(row=3, column=2, sticky="we")
 
         buttons = ttk.Frame(frame)
         buttons.grid(row=4, column=0, columnspan=3, pady=12)
-        ttk.Button(buttons, text="Convert", command=self.on_convert).pack(side="left", padx=4)
-        ttk.Button(buttons, text="Refresh", command=self.on_refresh).pack(side="left", padx=4)
+        ttk.Button(buttons, text="Convert", command=self.on_convert).pack(
+            side="left", padx=4
+        )
+        ttk.Button(buttons, text="Refresh", command=self.on_refresh).pack(
+            side="left", padx=4
+        )
 
-        ttk.Label(frame, textvariable=self.result_var,
-                  font=("TkDefaultFont", 12, "bold")).grid(row=5, column=0, columnspan=3, sticky="w")
-        ttk.Label(frame, textvariable=self.rate_var).grid(row=6, column=0, columnspan=3, sticky="w")
-        ttk.Label(frame, textvariable=self.updated_var).grid(row=7, column=0, columnspan=3, sticky="w")
-        self.status_label = ttk.Label(frame, textvariable=self.status_var,
-                                      wraplength=320, justify="left")
+        ttk.Label(
+            frame, textvariable=self.result_var, font=("TkDefaultFont", 12, "bold")
+        ).grid(row=5, column=0, columnspan=3, sticky="w")
+        ttk.Label(frame, textvariable=self.rate_var).grid(
+            row=6, column=0, columnspan=3, sticky="w"
+        )
+        ttk.Label(frame, textvariable=self.updated_var).grid(
+            row=7, column=0, columnspan=3, sticky="w"
+        )
+        self.status_label = ttk.Label(
+            frame, textvariable=self.status_var, wraplength=320, justify="left"
+        )
         self.status_label.grid(row=8, column=0, columnspan=3, sticky="w", pady=(8, 0))
 
     def _set_status(self, message: str, error: bool = False) -> None:
@@ -112,7 +125,9 @@ class AppWindow:
         snapshot = self.service.snapshot
         try:
             req = validate_conversion(
-                self.amount_var.get(), self.source_var.get(), self.target_var.get(),
+                self.amount_var.get(),
+                self.source_var.get(),
+                self.target_var.get(),
                 snapshot.currencies() if snapshot else [],
             )
         except ValidationError as err:
@@ -123,25 +138,33 @@ class AppWindow:
 
         rate = snapshot.rate(req.source, req.target)
         converted = self.converter.convert(req.amount, rate)
-        self.result_var.set(f"{req.amount:,.2f} {req.source} = {converted:,.2f} {req.target}")
+        self.result_var.set(
+            f"{req.amount:,.2f} {req.source} = {converted:,.2f} {req.target}"
+        )
         self.rate_var.set(f"1 {req.source} = {rate:.6f} {req.target}")
         self._set_status("Converted.")
 
     def on_swap(self) -> None:  # FR-09
-        src, tgt = self.source_var.get(), self.target_var.get()
-        self.source_var.set(tgt)
-        self.target_var.set(src)
+        source, target = swap_currencies(self.source_var.get(), self.target_var.get())
+        self.source_var.set(source)
+        self.target_var.set(target)
+        # The old result no longer matches the dropdowns, so clear it.
+        self.result_var.set("")
+        self.rate_var.set("")
 
     # ---------- refresh (FR-04, FR-07, FR-08) ----------
     def on_refresh(self) -> None:
-        wait = self._next_manual_ok - time.monotonic()
+        wait = self._cooldown.remaining()
         if wait > 0:
             self._set_status(
-                f"Please wait {int(wait) + 1} more second(s) before refreshing again.",
-                error=True)
+                f"Please wait {wait} more second(s) before refreshing again.",
+                error=True,
+            )
             return
         if self._start_refresh():
-            self._next_manual_ok = time.monotonic() + MANUAL_COOLDOWN_S
+            self._cooldown.start()
+        else:
+            self._set_status("Rates are already being updated. Please wait.")
 
     def _auto_refresh(self) -> None:
         self._start_refresh()
@@ -160,7 +183,9 @@ class AppWindow:
         try:
             result = self.service.refresh()  # never raises
         except Exception:
-            result = RefreshResult(False, "Something went wrong while updating the rates.")
+            result = RefreshResult(
+                False, "Something went wrong while updating the rates."
+            )
         self._results.put(result)
 
     def _poll_results(self) -> None:
@@ -183,5 +208,7 @@ class AppWindow:
                 self.source_var.set("USD")
             if not self.target_var.get() and "PHP" in codes:
                 self.target_var.set("PHP")
-            self.updated_var.set(f"Rates last updated: {snapshot.fetched_at:%Y-%m-%d %H:%M:%S}")
+            self.updated_var.set(
+                f"Rates last updated: {snapshot.fetched_at:%Y-%m-%d %H:%M:%S}"
+            )
         self._set_status(result.message, error=not result.ok)
