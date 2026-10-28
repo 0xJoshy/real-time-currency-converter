@@ -56,6 +56,11 @@ def validate_currency(code, supported) -> str:
     return cleaned
 
 
+def swap_currencies(source, target):
+    """Return (target, source) so the Swap button can exchange the two (FR-09)."""
+    return target, source
+
+
 def validate_conversion(amount_text, source, target, supported) -> ConversionRequest:
     """Validate everything the Convert button needs in one call."""
     if not supported:
