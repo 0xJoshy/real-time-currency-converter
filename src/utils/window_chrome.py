@@ -11,6 +11,7 @@ WS_EX_APPWINDOW = 0x00040000
 WS_EX_TOOLWINDOW = 0x00000080
 DWMWA_WINDOW_CORNER_PREFERENCE = 33
 DWMWCP_ROUND = 2
+SW_MINIMIZE = 6
 
 
 def apply(root, refresh: bool = False) -> None:
@@ -39,3 +40,29 @@ def apply(root, refresh: bool = False) -> None:
     if refresh:  # the style change only shows after a hide/show
         root.withdraw()
         root.after(10, root.deiconify)
+
+
+def minimize(root) -> bool:
+    """Minimize through Win32 so the taskbar button and restore keep working."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        user32 = ctypes.windll.user32
+        user32.ShowWindow(user32.GetParent(root.winfo_id()), SW_MINIMIZE)
+        return True
+    except Exception:
+        return False
+
+
+def is_minimized(root) -> bool:
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        user32 = ctypes.windll.user32
+        return bool(user32.IsIconic(user32.GetParent(root.winfo_id())))
+    except Exception:
+        return False

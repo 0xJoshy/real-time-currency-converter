@@ -30,7 +30,7 @@ class _CaptionButton(tk.Label):
 class TitleBar(tk.Frame):
     HEIGHT = 52
 
-    def __init__(self, parent, root: tk.Tk):
+    def __init__(self, parent, root: tk.Tk, on_minimize):
         super().__init__(parent, bg=theme.BAR_BG, height=self.HEIGHT)
         self.root = root
         self.pack_propagate(False)
@@ -70,7 +70,7 @@ class TitleBar(tk.Frame):
         _CaptionButton(self, "\u2715", self.root.destroy, "#E5484D", "#FFFFFF").pack(
             side="right", fill="y"
         )
-        _CaptionButton(self, "\u2014", self.minimize, "#E3ECFB").pack(
+        _CaptionButton(self, "\u2014", on_minimize, "#E3ECFB").pack(
             side="right", fill="y"
         )
 
@@ -84,9 +84,3 @@ class TitleBar(tk.Frame):
 
     def _drag(self, event) -> None:
         self.root.geometry(f"+{event.x_root - self._dx}+{event.y_root - self._dy}")
-
-    def minimize(self) -> None:
-        # A frameless window can't be iconified, so briefly give it a frame.
-        # AppWindow removes the frame again when the window is restored.
-        self.root.overrideredirect(False)
-        self.root.iconify()

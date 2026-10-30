@@ -129,7 +129,7 @@ class AppWindow:
             canvas.create_window(
                 0,
                 0,
-                window=TitleBar(canvas, root),
+                window=TitleBar(canvas, root, self.minimize),
                 anchor="nw",
                 width=WINDOW_W,
                 height=bar_h,
@@ -147,7 +147,6 @@ class AppWindow:
             root.bind("<Map>", self._on_map)
             root.after(100, lambda: window_chrome.apply(root, refresh=True))
             root.after(250, self._grab_focus)
-        self.amount_entry.focus_set()
 
     def _build_body(self, body: tk.Frame) -> None:
         def caption(parent, text):
@@ -160,12 +159,11 @@ class AppWindow:
                 anchor="w",
             )
 
-        # Amount
-        caption(body, "Amount").pack(fill="x")
-        amount_panel = theme.RoundedPanel(body, BODY_W, 44)
-        amount_panel.pack(pady=(4, 14))
+        # Amount (label floats inside the field)
+        amount_field = theme.FloatingLabelField(body, "Amount", BODY_W)
+        amount_field.pack(pady=(0, 10))
         self.amount_entry = tk.Entry(
-            amount_panel.inner,
+            amount_field.inner,
             textvariable=self.amount_var,
             relief="flat",
             bd=0,
@@ -181,7 +179,7 @@ class AppWindow:
         self.amount_entry.bind(
             "<Return>", lambda _e: self.on_convert()
         )  # Enter converts
-        self._focus_ring(self.amount_entry, amount_panel)
+        amount_field.attach(self.amount_entry)
 
         # From / Swap / To
         row = tk.Frame(body, bg=theme.CARD)
@@ -226,7 +224,7 @@ class AppWindow:
             anchor="w",
             font=theme.font(8, "bold"),
         ).pack(fill="x")
-        tk.Label(
+        self.result_label = tk.Label(
             inner,
             textvariable=self.result_var,
             bg=bg,
@@ -236,15 +234,17 @@ class AppWindow:
             justify="left",
             wraplength=BODY_W - 32,
             height=2,
-        ).pack(fill="x", pady=(4, 2))
-        tk.Label(
+        )
+        self.result_label.pack(fill="x", pady=(4, 2))
+        self.rate_label = tk.Label(
             inner,
             textvariable=self.rate_var,
             bg=bg,
             fg=theme.TEXT,
             font=theme.font(9),
             anchor="w",
-        ).pack(fill="x")
+        )
+        self.rate_label.pack(fill="x")
         tk.Label(
             inner,
             textvariable=self.updated_var,
@@ -254,6 +254,14 @@ class AppWindow:
             anchor="w",
         ).pack(fill="x", pady=(6, 0))
         panel.fit()  # size the panel to its contents so nothing is cut off
+
+        # Fade-in for the result text (dark text easing in from the panel colour)
+        self._fades = [
+            theme.ColorFader(
+                lbl, theme.TEXT, lambda c, l=lbl: l.configure(fg=c), rate=0.18
+            )
+            for lbl in (self.result_label, self.rate_label)
+        ]
 
         # Status: fixed height so a long error never resizes the window.
         status_frame = tk.Frame(body, bg=theme.CARD, width=BODY_W, height=48)
@@ -293,14 +301,57 @@ class AppWindow:
 
     # ---------- frameless window helpers ----------
     def _on_map(self, event) -> None:
-        """Restoring from minimize: take the OS frame off again."""
+        """Linux fallback only: restoring from minimize drops the OS frame again."""
         if event.widget is self.root and not self.root.overrideredirect():
 
             def restore():
                 self.root.overrideredirect(True)
                 window_chrome.apply(self.root)
+                self._fade(1.0, steps=10)
 
             self.root.after(10, restore)
+
+    def minimize(self) -> None:
+        def go():
+            if window_chrome.minimize(self.root):  # Windows
+                self._watch_restore()
+            else:  # other platforms: briefly restore the frame, then iconify
+                self.root.overrideredirect(False)
+                self.root.iconify()
+
+        self._fade(0.0, steps=6, done=go)
+
+    def _watch_restore(self) -> None:
+        """While minimized, check for a restore (taskbar click) and fade back in."""
+        if window_chrome.is_minimized(self.root):
+            self.root.after(100, self._watch_restore)
+        else:
+            self._fade(1.0, steps=10)
+
+    def _set_alpha(self, value: float) -> bool:
+        try:
+            self.root.attributes("-alpha", value)
+            return True
+        except tk.TclError:  # window manager without opacity support
+            return False
+
+    def _fade(self, target: float, steps: int = 8, done=None) -> None:
+        try:
+            current = float(self.root.attributes("-alpha"))
+        except (tk.TclError, ValueError):
+            if done:
+                done()
+            return
+        delta = (target - current) / steps
+
+        def tick(i: int = 1) -> None:
+            self._set_alpha(target if i >= steps else current + delta * i)
+            if i < steps:
+                self.root.after(16, tick, i + 1)
+            elif done:
+                done()
+
+        tick()
 
     def _grab_focus(self) -> None:
         self.root.focus_force()
@@ -314,6 +365,13 @@ class AppWindow:
     def _clear_result(self) -> None:
         self.result_var.set(PLACEHOLDER)
         self.rate_var.set("")
+        for fade in self._fades:  # stop any fade in progress, show normal text
+            fade.to(theme.TEXT, instant=True)
+
+    def _reveal_result(self) -> None:
+        for fade in self._fades:
+            fade.to(theme.RESULT_BG, instant=True)  # start invisible...
+            fade.to(theme.TEXT)  # ...and ease in
 
     # ---------- convert (FR-01, FR-02, FR-06) ----------
     def on_convert(self) -> None:
@@ -337,6 +395,7 @@ class AppWindow:
         )
         self.rate_var.set(f"1 {req.source} = {rate:.6f} {req.target}")
         self._set_status("")
+        self._reveal_result()
 
     def on_swap(self) -> None:  # FR-09
         source, target = swap_currencies(self.source_var.get(), self.target_var.get())

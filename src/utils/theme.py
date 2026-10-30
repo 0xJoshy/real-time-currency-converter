@@ -72,6 +72,36 @@ def blend(a: str, b: str, t: float) -> str:
     return "#%02x%02x%02x" % tuple(mixed)
 
 
+class ColorFader:
+    """Eases a colour toward a target on the widget's own timer (~16 ms/frame)."""
+
+    def __init__(self, widget, color, apply, rate=0.3):
+        self._widget, self._apply, self._rate = widget, apply, rate
+        self._color = self._target = color
+        self._job = None
+
+    def to(self, target: str, instant: bool = False) -> None:
+        self._target = target
+        if instant:
+            if self._job is not None:
+                self._widget.after_cancel(self._job)
+                self._job = None
+            self._color = target
+            self._apply(target)
+        elif self._job is None:
+            self._step()
+
+    def _step(self) -> None:
+        gap = max(abs(a - b) for a, b in zip(_rgb(self._color), _rgb(self._target)))
+        if gap <= 2:  # close enough: snap and stop
+            self._color, self._job = self._target, None
+            self._apply(self._color)
+            return
+        self._color = blend(self._color, self._target, self._rate)
+        self._apply(self._color)
+        self._job = self._widget.after(16, self._step)
+
+
 def rounded_rect(canvas: tk.Canvas, x1, y1, x2, y2, r, **kw) -> int:
     r = min(r, (x2 - x1) / 2, (y2 - y1) / 2)
     pts = [
@@ -189,6 +219,9 @@ class RoundedPanel(tk.Canvas):
             outline=outline,
             width=1,
         )
+        self._fader = ColorFader(
+            self, outline, lambda c: self.itemconfigure(self._shape, outline=c)
+        )
         self.inner = tk.Frame(self, bg=fill)
         if valign == "top":
             self.create_window(
@@ -200,9 +233,8 @@ class RoundedPanel(tk.Canvas):
             )
 
     def set_focus(self, on: bool) -> None:
-        self.itemconfigure(
-            self._shape, outline=ACCENT if on else self._outline, width=2 if on else 1
-        )
+        self.itemconfigure(self._shape, width=2 if on else 1)
+        self._fader.to(ACCENT if on else self._outline)
 
     def fit(self) -> None:
         """Resize to the natural height of the contents (top-aligned panels)."""
@@ -222,6 +254,103 @@ class RoundedPanel(tk.Canvas):
             width=1,
         )
         self.tag_lower(self._shape)
+
+
+class FloatingLabelField(tk.Canvas):
+    """Text field whose label starts inside the box and floats onto the border
+    when focused or filled. Put the Entry in `.inner`, then call attach(entry)."""
+
+    TOP = 8  # room above the border for the floated label
+    REST_SIZE, FLOAT_SIZE = 11, 8
+
+    def __init__(
+        self, parent, label, width, height=44, *, radius=12, pad=12, canvas_bg=CARD
+    ):
+        top = self.TOP
+        super().__init__(
+            parent,
+            width=width,
+            height=height + top,
+            bg=canvas_bg,
+            highlightthickness=0,
+            bd=0,
+        )
+        self._shape = rounded_rect(
+            self,
+            1,
+            top,
+            width - 1,
+            top + height - 1,
+            radius,
+            fill=FIELD_BG,
+            outline=FIELD_BORDER,
+            width=1,
+        )
+        self.inner = tk.Frame(self, bg=FIELD_BG)
+        self.create_window(
+            pad, top + height / 2, window=self.inner, anchor="w", width=width - 2 * pad
+        )
+
+        self._rest = (pad - 3, top + height / 2)  # label inside the box
+        self._float = (radius + 6, top)  # label sitting on the border
+        self._label = tk.Label(self, text=label, padx=3, pady=0, bd=0, cursor="xterm")
+        self._item = self.create_window(*self._rest, window=self._label, anchor="w")
+        self._label.lift(self.inner)  # keep the label above the Entry
+
+        self._progress = self._target = 0.0
+        self._job = None
+        self._focused = False
+        self.entry = None
+        self._apply()
+
+    def attach(self, entry: tk.Entry) -> None:
+        self.entry = entry
+        entry.bind("<FocusIn>", self._on_focus_in, add="+")
+        entry.bind("<FocusOut>", self._on_focus_out, add="+")
+        for widget in (self, self._label):  # clicking the label focuses the field
+            widget.bind("<Button-1>", lambda _e: entry.focus_set())
+
+    def _on_focus_in(self, _event) -> None:
+        self._focused = True
+        self.itemconfigure(self._shape, outline=ACCENT, width=2)
+        self._go(1.0)
+        self._apply()
+
+    def _on_focus_out(self, _event) -> None:
+        self._focused = False
+        self.itemconfigure(self._shape, outline=FIELD_BORDER, width=1)
+        self._go(1.0 if self.entry.get() else 0.0)
+        self._apply()
+
+    # ---------- animation ----------
+    def _go(self, target: float) -> None:
+        self._target = target
+        if self._job is None:
+            self._step()
+
+    def _step(self) -> None:
+        delta = self._target - self._progress
+        if abs(delta) < 0.02:
+            self._progress, self._job = self._target, None
+            self._apply()
+            return
+        self._progress += delta * 0.35  # ease-out: big steps first, then settle
+        self._apply()
+        self._job = self.after(16, self._step)
+
+    def _apply(self) -> None:
+        p = self._progress
+        x = self._rest[0] + (self._float[0] - self._rest[0]) * p
+        y = self._rest[1] + (self._float[1] - self._rest[1]) * p
+        self.coords(self._item, x, y)
+        size = round(self.REST_SIZE + (self.FLOAT_SIZE - self.REST_SIZE) * p)
+        self._label.configure(
+            font=font(size, "bold" if p > 0.5 else "normal"),
+            bg=blend(
+                FIELD_BG, CARD, p
+            ),  # at the top it matches the card, cutting the notch
+            fg=ACCENT if self._focused else MUTED,
+        )
 
 
 class RoundedButton(tk.Canvas):
@@ -282,19 +411,24 @@ class RoundedButton(tk.Canvas):
             fill=self._s["fg"],
             font=font(font_size, "bold"),
         )
-        self.bind("<Enter>", lambda _e: self._paint(self._s["hover"]))
-        self.bind("<Leave>", lambda _e: self._paint(self._s["fill"]))
-        self.bind("<ButtonPress-1>", lambda _e: self._paint(self._s["press"]))
-        self.bind("<ButtonRelease-1>", self._on_release)
 
-    def _paint(self, color: str) -> None:
-        self.itemconfigure(self._shape, fill=color)
+        def paint(color):  # the primary button's outline follows its fill
+            extra = {"outline": color} if kind == "primary" else {}
+            self.itemconfigure(self._shape, fill=color, **extra)
+
+        self._fader = ColorFader(self, self._s["fill"], paint)
+        self.bind("<Enter>", lambda _e: self._fader.to(self._s["hover"]))
+        self.bind("<Leave>", lambda _e: self._fader.to(self._s["fill"]))
+        self.bind(
+            "<ButtonPress-1>", lambda _e: self._fader.to(self._s["press"], instant=True)
+        )
+        self.bind("<ButtonRelease-1>", self._on_release)
 
     def _on_release(self, event) -> None:
         inside = (
             0 <= event.x <= self.winfo_width() and 0 <= event.y <= self.winfo_height()
         )
-        self._paint(self._s["hover"] if inside else self._s["fill"])
+        self._fader.to(self._s["hover"] if inside else self._s["fill"])
         if inside:
             self._command()
 
