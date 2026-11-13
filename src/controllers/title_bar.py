@@ -58,7 +58,7 @@ class TitleBar(tk.Frame):
         )
         subtitle = tk.Label(
             titles,
-            text="Real-time exchange rates",
+            text="Real-time Exchange Rates",
             bg=theme.BAR_BG,
             fg=theme.MUTED,
             font=theme.font(8),
