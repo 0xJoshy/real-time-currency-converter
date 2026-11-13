@@ -127,3 +127,6 @@ If something goes wrong, the status line shows a plain message in red, and the l
 - Requires an internet connection. There is no offline mode.
 - Converts one source currency to one target currency at a time.
 - Rates come from ExchangeRate-API and may differ slightly from banks or other sites.
+
+---
+
