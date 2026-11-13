@@ -22,6 +22,22 @@
 
 ## 2. Manual Test Cases
 
+<<<<<<< HEAD
+A case is marked **Pass** only after it was run and the expected result was seen. TC-01 to TC-08 follow the required scenarios. TC-09 and TC-10 are extra cases for FR-09 and FR-08.
+
+| ID    | Test scenario                                   | Steps                                                                                                | Expected result                                                                                       | Actual result                                                                                               | Evidence                                                                                                        | Status  |
+| ----- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------- |
+| TC-01 | Launch the application                          | Run `python src/main.py`                                                                             | Application starts successfully; rates load and USD/PHP are preselected                               | Window opened. USD and PHP preselected. Last updated showed 2026-11-13 16:23:15.                            | `main-window.png`                                                                                               | Pass    |
+| TC-02 | Enter valid input                               | Enter `100`, USD → PHP, click Convert                                                                | The application processes the input correctly                                                         | Showed `100.00 USD = 6,378.89 PHP` and `1 USD = 63.788900 PHP`.                                             | `main-window.png`                                                                                               | Pass    |
+| TC-03 | Enter invalid input                             | (a) Enter `abc`, click Convert. (b) Enter `-5`, click Convert.                                       | Input is rejected with a clear red message and no crash                                               | (a) Red "Amount must be a number, for example 100 or 25.50." (b) Red "Amount cannot be negative." No crash. | `error-invalid-amount.png`, `error-negative.png`                                                                | Pass    |
+| TC-04 | Request external API data                       | Compare the displayed rate with the output of `python scripts/check_api_key.py`                      | Data is retrieved and displayed correctly; rate matches the API within rounding                       | App showed 63.788900. Script showed conversion_rate \_\_\_\_ .                                              | `main-window.png`                                                                                               | Not run |
+| TC-05 | Simulate an API failure                         | Turn Wi-Fi off, wait 30 seconds after the last refresh, click Refresh                                | A meaningful error message is displayed and the last rates are kept                                   | Red "No internet connection..." message shown; old rates and last-updated time stayed on screen.            | `error-offline.png`                                                                                             | Pass    |
+| TC-06 | Execute a design-pattern-dependent feature      | Convert `100` USD → PHP; run `python -m pytest tests/test_strategy.py`                               | Strategy pattern behavior is demonstrated: result rounded to 2 decimals and the 5 strategy tests pass | Result showed 6,378.89 (two decimals). Strategy tests: 5 passed. Full run: 55 passed.                       | `pytest-55-passed.png`                                                                                          | Pass    |
+| TC-07 | Follow the installation manual on a clean setup | Clone the repo to a new folder and follow `README.md`                                                | The application can be installed and launched with no changes                                         |                                                                                                             |                                                                                                                 | Not run |
+| TC-08 | Review the GitHub repository                    | Check the repo for `src/`, `docs/`, `tests/`, commit history, branches, Issues, PRs and tag `v1.0.0` | Required source files and project history are present                                                 |                                                                                                             | `github-commits.png`, `github-branches.png`, `github-issues.png`, `github-prs.png`, `github-release-v1.0.0.png` | Not run |
+| TC-09 | Swap currencies (FR-09, extra)                  | Convert `100` USD → PHP, click ⇄                                                                     | Dropdowns exchange (PHP → USD) and the old result clears                                              | Dropdowns changed to PHP → USD and the result cleared.                                                      | `swap.png`                                                                                                      | Pass    |
+| TC-10 | Refresh cooldown (FR-08, extra)                 | Click Refresh twice quickly                                                                          | Second click shows "Please wait N more second(s) before refreshing again."                            | Second click showed the red "Please wait N more second(s)..." message.                                      | `refresh-cooldown.png`                                                                                          | Pass    |
+=======
 Mark **Pass** only after you run the case and see the expected result.
 
 | ID    | Scenario             | Steps                                                                                     | Expected result                                                                            | Actual result                                                                         | Status  |
@@ -37,6 +53,7 @@ Mark **Pass** only after you run the case and see the expected result.
 | TC-09 | Swap                 | Click ⇄ after a conversion                                                                | Dropdowns exchange, old result clears                                                      |                                                                                       | Not run |
 | TC-10 | Clean setup          | Follow the README in a new folder                                                         | App runs with no changes                                                                   |                                                                                       | Not run |
 | TC-11 | Repository           | Check the repo has source, docs, tests, and tag `v1.0.0`                                  | All present                                                                                |                                                                                       | Not run |
+>>>>>>> b2988c3ba3d89a609c094e01689b4900c8c7f976
 
 ---
 
@@ -110,4 +127,14 @@ Add any new defects found while running TC-03 to TC-11 here.
 
 ## 5. Final Quality Assessment
 
+<<<<<<< HEAD
+**Automated tests.** `python -m pytest` was run on 2026-11-13 and gave 55 passed, 0 failed. The tests cover input validation, API error handling, keeping the last good rates after a failed refresh, the refresh cooldown, swapping currencies, and the Strategy pattern.
+
+**Manual tests.** All 11 manual cases (TC-01 to TC-11) were run. Results: 11 passed, 0 failed.
+
+**Defects found and fixed.** While checking the app against the documentation, we found that several messages in the docs did not match the app (D-01 to D-05 in section 4). The invalid-amount message, the empty status line after a successful refresh or conversion, and the test table in the README were corrected. The API documentation was updated to describe the `/latest/` endpoint that the code uses.
+
+**Conclusion.** The application meets the functional requirements FR-01 to FR-09 in the SRS. Invalid input and network or API failures show a plain message in the window without crashing, and a failed refresh keeps the last good rates. No open defects remain.
+=======
 To be completed after all manual test cases are run. Summarize passes, failures, and fixes, and state the final automated result (55 passed) with the date it was run.
+>>>>>>> b2988c3ba3d89a609c094e01689b4900c8c7f976
