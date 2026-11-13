@@ -37,6 +37,7 @@ A case is marked **Pass** only after it was run and the expected result was seen
 | TC-08 | Review the GitHub repository                    | Check the repo for `src/`, `docs/`, `tests/`, commit history, branches, Issues, PRs and tag `v1.0.0` | Required source files and project history are present                                                 |                                                                                                             | `github-commits.png`, `github-branches.png`, `github-issues.png`, `github-prs.png`, `github-release-v1.0.0.png` | Not run |
 | TC-09 | Swap currencies (FR-09, extra)                  | Convert `100` USD → PHP, click ⇄                                                                     | Dropdowns exchange (PHP → USD) and the old result clears                                              | Dropdowns changed to PHP → USD and the result cleared.                                                      | `swap.png`                                                                                                      | Pass    |
 | TC-10 | Refresh cooldown (FR-08, extra)                 | Click Refresh twice quickly                                                                          | Second click shows "Please wait N more second(s) before refreshing again."                            | Second click showed the red "Please wait N more second(s)..." message.                                      | `refresh-cooldown.png`                                                                                          | Pass    |
+
 =======
 Mark **Pass** only after you run the case and see the expected result.
 
@@ -53,7 +54,8 @@ Mark **Pass** only after you run the case and see the expected result.
 | TC-09 | Swap                 | Click ⇄ after a conversion                                                                | Dropdowns exchange, old result clears                                                      |                                                                                       | Not run |
 | TC-10 | Clean setup          | Follow the README in a new folder                                                         | App runs with no changes                                                                   |                                                                                       | Not run |
 | TC-11 | Repository           | Check the repo has source, docs, tests, and tag `v1.0.0`                                  | All present                                                                                |                                                                                       | Not run |
->>>>>>> b2988c3ba3d89a609c094e01689b4900c8c7f976
+
+> > > > > > > b2988c3ba3d89a609c094e01689b4900c8c7f976
 
 ---
 
@@ -134,7 +136,6 @@ Add any new defects found while running TC-03 to TC-11 here.
 
 **Defects found and fixed.** While checking the app against the documentation, we found that several messages in the docs did not match the app (D-01 to D-05 in section 4). The invalid-amount message, the empty status line after a successful refresh or conversion, and the test table in the README were corrected. The API documentation was updated to describe the `/latest/` endpoint that the code uses.
 
-**Conclusion.** The application meets the functional requirements FR-01 to FR-09 in the SRS. Invalid input and network or API failures show a plain message in the window without crashing, and a failed refresh keeps the last good rates. No open defects remain.
-=======
-To be completed after all manual test cases are run. Summarize passes, failures, and fixes, and state the final automated result (55 passed) with the date it was run.
->>>>>>> b2988c3ba3d89a609c094e01689b4900c8c7f976
+# **Conclusion.** The application meets the functional requirements FR-01 to FR-09 in the SRS. Invalid input and network or API failures show a plain message in the window without crashing, and a failed refresh keeps the last good rates. No open defects remain.
+
+Completed after all manual test cases are run. Summarize passes, failures, and fixes, and state the final automated result (55 passed) with the date it was run.
