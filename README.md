@@ -67,7 +67,12 @@ python -m venv .venv
 ### 3. Install the dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt 
+
+or
+
+./.venv/bin/python.exe -m pip install -r requirements.txt
+./.venv/bin/python.exe src/main.py
 ```
 
 ### 4. Add your API key
