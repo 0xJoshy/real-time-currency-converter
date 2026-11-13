@@ -119,8 +119,6 @@ A window titled **Real-Time Currency Converter** opens, and the status line show
   <img src="screenshots/main-window.png" alt="Main window with a conversion result" width="320">
 </p>
 
-> Add your own screenshots to the `screenshots/` folder, and update the image path above.
-
 ---
 
 ## 🧪 Running the Tests
