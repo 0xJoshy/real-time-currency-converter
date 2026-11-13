@@ -4,42 +4,110 @@
 
 **Command:** `python -m pytest`
 
-**Result recorded:** 50 passed, 0 failed.
+**Result recorded:** 55 passed, 0 failed. Run on YYYY-MM-DD (replace with your actual date and output).
 
-**Note for the team:** run the command on your own machine before submitting, and replace this result with your actual output and date.
+![pytest run showing 55 passed](../screenshots/pytest-55-passed.png)
 
-| File | Tests | Covers |
-|---|---|---|
-| `tests/test_currency.py` | validation | FR-06 input validation |
-| `tests/test_rate_client.py` | API client | FR-07 messages, no key leakage |
-| `tests/test_rate_service.py` | service | Last good rates kept after failure |
-| `tests/test_cooldown.py` | cooldown | FR-08 wait time |
-| `tests/test_swap.py` | swap | FR-09 |
-| `tests/test_strategy.py` | strategy | Design pattern behavior (TC06) |
+| File                         | Tests  | Covers                             |
+| ---------------------------- | ------ | ---------------------------------- |
+| `tests/test_currency.py`     | 28     | FR-06 input validation             |
+| `tests/test_rate_client.py`  | 9      | FR-07 messages, no key leakage     |
+| `tests/test_rate_service.py` | 4      | Last good rates kept after failure |
+| `tests/test_cooldown.py`     | 5      | FR-08 wait time                    |
+| `tests/test_swap.py`         | 4      | FR-09                              |
+| `tests/test_strategy.py`     | 5      | Design pattern behavior (TC-06)    |
+| **Total**                    | **55** |                                    |
+
+---
 
 ## 2. Manual Test Cases
 
-Run each case in the app and record the actual result. Mark **Pass** only after you run it.
+Mark **Pass** only after you run the case and see the expected result.
 
-| ID | Scenario | Steps | Expected result | Actual result | Status |
-|---|---|---|---|---|---|
-| TC-01 | Launch the app | Run `python src/main.py` | Window opens, "Rates updated." shown | | Not run |
-| TC-02 | Valid conversion | Enter `100`, USD → PHP, click Convert | Converted amount and rate shown | | Not run |
-| TC-03 | Invalid amount | Enter `abc`, click Convert | "Please enter a number." shown, no crash | | Not run |
-| TC-04 | Negative amount | Enter `-5`, click Convert | "Amount cannot be negative." shown | | Not run |
-| TC-05 | API data | Compare the displayed rate with `scripts/check_api_key.py` | Rate matches the API within rounding | | Not run |
-| TC-06 | Design pattern | Convert `100` and check the rounded result has two decimals | Result rounded to 2 decimals | | Not run |
-| TC-07 | API failure | Disconnect the internet, click Refresh | Plain error shown, last rates kept | | Not run |
-| TC-08 | Refresh and cooldown | Click Refresh twice quickly | Second click shows "Please wait..." | | Not run |
-| TC-09 | Clean setup | Follow the README on a new folder | App runs with no changes | | Not run |
-| TC-10 | Repository | Check the repo has source, docs, tests, and tag | All present | | Not run |
+| ID    | Scenario             | Steps                                                                                     | Expected result                                                                            | Actual result                                                                         | Status  |
+| ----- | -------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------- |
+| TC-01 | Launch the app       | Run `python src/main.py`                                                                  | Window opens, rates load, From/To fill with USD and PHP, "Rates last updated" shows a time | Window opened. USD and PHP were preselected. Last updated showed 2026-11-13 16:23:15. | Pass    |
+| TC-02 | Valid conversion     | Enter `100`, USD → PHP, click Convert                                                     | Converted amount and rate shown                                                            | Showed `100.00 USD = 6,378.89 PHP` and `1 USD = 63.788900 PHP`.                       | Pass    |
+| TC-03 | Invalid amount       | Enter `abc`, click Convert                                                                | "Amount must be a number, for example 100 or 25.50." in red, no crash                      |                                                                                       | Not run |
+| TC-04 | Negative amount      | Enter `-5`, click Convert                                                                 | "Amount cannot be negative." in red                                                        |                                                                                       | Not run |
+| TC-05 | API data             | Compare the displayed rate with `python scripts/check_api_key.py`                         | Rate matches the API within rounding                                                       |                                                                                       | Not run |
+| TC-06 | Design pattern       | Convert `100` and check the rounded result has two decimals; run `tests/test_strategy.py` | Result rounded to 2 decimals; strategy tests pass                                          |                                                                                       | Not run |
+| TC-07 | API failure          | Turn Wi-Fi off, click Refresh                                                             | Red "No internet connection..." message, last rates kept                                   |                                                                                       | Not run |
+| TC-08 | Refresh and cooldown | Click Refresh twice quickly                                                               | Second click shows "Please wait N more second(s) before refreshing again."                 |                                                                                       | Not run |
+| TC-09 | Swap                 | Click ⇄ after a conversion                                                                | Dropdowns exchange, old result clears                                                      |                                                                                       | Not run |
+| TC-10 | Clean setup          | Follow the README in a new folder                                                         | App runs with no changes                                                                   |                                                                                       | Not run |
+| TC-11 | Repository           | Check the repo has source, docs, tests, and tag `v1.0.0`                                  | All present                                                                                |                                                                                       | Not run |
 
-## 3. Known Defects
+---
 
-| ID | Description | Status |
-|---|---|---|
-| — | None recorded yet. Add defects found during manual testing here. | — |
+## 3. Screenshot Evidence
 
-## 4. Final Quality Assessment
+### 3.1 TC-01 and TC-02: launch and valid conversion
 
-To be completed after all manual test cases are run. Summarize passes, failures, and fixes.
+![Main window with a conversion result](../screenshots/main-window.png)
+
+### 3.2 TC-03: invalid amount
+
+![Invalid amount error](../screenshots/error-invalid-amount.png)
+
+### 3.3 TC-04: negative amount
+
+![Negative amount error](../screenshots/error-negative.png)
+
+### 3.4 TC-09: swap
+
+![Swap currencies](../screenshots/swap.png)
+
+### 3.5 TC-08: refresh cooldown
+
+![Refresh cooldown message](../screenshots/refresh-cooldown.png)
+
+### 3.6 TC-07: offline error
+
+![Offline error](../screenshots/error-offline.png)
+
+### 3.7 Development evidence
+
+| Evidence                 | File                                    |
+| ------------------------ | --------------------------------------- |
+| VS Code extensions       | `screenshots/vscode-extensions.png`     |
+| Project folder structure | `screenshots/project-structure.png`     |
+| GitHub commit history    | `screenshots/github-commits.png`        |
+| GitHub branches          | `screenshots/github-branches.png`       |
+| GitHub Issues            | `screenshots/github-issues.png`         |
+| GitHub Pull Requests     | `screenshots/github-prs.png`            |
+| GitHub release v1.0.0    | `screenshots/github-release-v1.0.0.png` |
+
+![VS Code extensions](../screenshots/vscode-extensions.png)
+
+![Project structure](../screenshots/project-structure.png)
+
+![GitHub commits](../screenshots/github-commits.png)
+
+![GitHub branches](../screenshots/github-branches.png)
+
+![GitHub Issues](../screenshots/github-issues.png)
+
+![GitHub Pull Requests](../screenshots/github-prs.png)
+
+![GitHub release v1.0.0](../screenshots/github-release-v1.0.0.png)
+
+---
+
+## 4. Known Defects
+
+| ID   | Description                                                                                                                                      | Status                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| D-01 | The old docs said `abc` shows "Please enter a number." The app actually shows "Amount must be a number, for example 100 or 25.50."               | Fixed in the manual and this report              |
+| D-02 | After a successful refresh the status line is empty. The old README and manual said "Rates updated." would appear. Seen in the TC-01 screenshot. | Fixed in the manual. Update the README line too. |
+| D-03 | After a successful conversion the status line is empty. The old manual said "Converted." would appear. Seen in the TC-02 screenshot.             | Fixed in the manual                              |
+| D-04 | `docs/api-documentation.md` describes the `/pair/` endpoint, but the code calls `/latest/{base}`.                                                | Open: update the doc                             |
+| D-05 | The README test table omits `tests/test_strategy.py`.                                                                                            | Open: update the README                          |
+
+Add any new defects found while running TC-03 to TC-11 here.
+
+---
+
+## 5. Final Quality Assessment
+
+To be completed after all manual test cases are run. Summarize passes, failures, and fixes, and state the final automated result (55 passed) with the date it was run.
